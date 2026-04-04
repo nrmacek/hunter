@@ -68,8 +68,8 @@ Note: There may be additional CLAUDE.md files inside `backend/` or `dashboard/` 
 - ✅ Phase 3 — Folder structure created and pushed
 - ✅ Phase 4 — Antigravity configured, Claude Code installed, CLAUDE.md in place
 - ✅ Phase 5 — Tech stack scaffold (FastAPI backend + SQLite + Next.js dashboard running locally)
-- 🔲 **Phase 6 — Real firm data in (current)**
-- 🔲 Phase 7 — Real scraping and AI scoring
+- ✅ Phase 6 — Real firm data in (120 firms: 34 Tier 1 + 72 Tier 2 + 14 Tier 3, stub scores)
+- 🔲 **Phase 7 — Real scraping and AI scoring (current)**
 - 🔲 Phase 8 — Full UX (drawer, BD tracking, bulk upload, CSV export)
 - 🔲 Phase 9 — Vercel deploy
 
