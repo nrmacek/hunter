@@ -14,3 +14,7 @@ node_modules/
 
 # Virtual environment
 backend/venv/
+
+# Secrets
+backend/.env
+.env
