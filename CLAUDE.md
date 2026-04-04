@@ -7,10 +7,31 @@
 
 **Hunter** is an AI-powered prospect evaluation and ranking tool built for Trelity Inc. — a US-based architecture/engineering outsourcing firm. It takes a list of A/E firm names, scrapes publicly available data, scores each firm against 6 weighted criteria, and displays a ranked list in a visual dashboard.
 
-**Built by:** Nick Macek (AI consultant)  
-**For:** John Mickey (CEO) and Jason (Principal BD Lead)  
-**Type:** Proof of Concept  
+**Built by:** Nick Macek (AI consultant, Armatura)
+**For:** John Mickey (CEO) and Jason (Principal BD Lead), Trelity Inc.
+**Type:** Proof of Concept
 **Repo:** github.com/nrmacek/hunter
+
+---
+
+## Repo Structure
+
+```
+hunter/
+├── CLAUDE.md          ← this file, always in repo root
+├── README.md
+├── backend/           ← Python FastAPI + SQLite
+├── dashboard/         ← Next.js frontend
+│   ├── public/
+│   │   └── TrelityLogo.png   ← Trelity logo, already in place
+│   └── src/
+├── data/
+├── docs/
+├── scripts/
+└── tests/
+```
+
+Note: There may be additional CLAUDE.md files inside `backend/` or `dashboard/` from earlier setup. Those should be deleted — this root-level file is the single source of truth.
 
 ---
 
@@ -20,7 +41,7 @@
 |---|---|
 | Backend | Python 3.12 (FastAPI) |
 | Database | SQLite |
-| Frontend | Next.js (React) |
+| Frontend | Next.js (React) — lives in `dashboard/` |
 | Hosting | Vercel (when ready to share) |
 | Scraping | Python + Antigravity browser agents |
 
@@ -46,14 +67,56 @@
 - ✅ Phase 2 — GitHub connected, repo created
 - ✅ Phase 3 — Folder structure created and pushed
 - ✅ Phase 4 — Antigravity configured, Claude Code installed, CLAUDE.md in place
-- 🔲 **Phase 5 — Tech stack scaffold (current)**
+- ✅ Phase 5 — Tech stack scaffold (FastAPI backend + SQLite + Next.js dashboard running locally)
+- 🔲 **Phase 6 — Real firm data in (current)**
+- 🔲 Phase 7 — Real scraping and AI scoring
+- 🔲 Phase 8 — Full UX (drawer, BD tracking, bulk upload, CSV export)
+- 🔲 Phase 9 — Vercel deploy
 
-### Phase 5 is done when:
-1. Python backend (FastAPI) can accept a firm name and return a scored JSON object with all 6 criterion scores and a composite score
-2. Next.js dashboard renders a ranked list of firms pulled from SQLite
-3. Both are running locally and talking to each other
+---
 
-Nothing more is required to call Phase 5 done.
+## Phase Definitions
+
+### Phase 6 — Real Firm Data
+Replace the 5 seed firms with real firm names from the Master Target List Excel file (`data/Master_Target_List_2_0.xlsx`). Scores remain stub values for now. Done when all Tier 1, Tier 2, and Tier 3 firms are in the database.
+
+### Phase 7 — Real Scraping and AI Scoring
+Replace stub scorer with real data collection and AI evaluation. Done when each firm has scores derived from actual public data sources, with confidence flags on any criterion where data could not be found.
+
+### Phase 8 — Full UX
+Add all confirmed UX features: firm detail drawer, single firm add form, bulk CSV/Excel upload, BD stage selector, notes field, last contacted date, CSV export. Done when all features are working in the dashboard.
+
+### Phase 9 — Vercel Deploy
+Push to Vercel. Done when Jason and John can access the dashboard via URL without Nick's machine running.
+
+---
+
+## Branding & Header Spec (Confirmed April 4, 2026)
+
+### Tool Name
+**Trelity Prospect Hunter**
+Subtext: **BY ARMATURA** — lighter gray, smaller font, all caps, same line or directly below
+
+### Header Layout
+- Logo: `TrelityLogo.png` from `dashboard/public/TrelityLogo.png`
+  - Render as `<img src="/TrelityLogo.png" />` in the header component
+  - Height: 32–36px, width auto, vertically centered in header
+  - Replaces any placeholder grid or "H" icon entirely
+- Title: "Trelity Prospect Hunter" in white, clean sans-serif, medium weight
+- Subtext: "BY ARMATURA" in lighter gray (#A0A8B8 or similar), smaller (11–12px), all caps, letter-spaced
+- Header background: Navy `#1B3A6B`
+
+### Brand Colors
+| Element | Value |
+|---|---|
+| Primary | Navy blue `#1B3A6B` |
+| Accent | Chartreuse/lime `#C5D82E` |
+| Background | Off-white `#F5F4EF` |
+| Header text | White |
+| Subtext | Light gray `#A0A8B8` |
+| Typography | Clean sans-serif |
+
+Score badge colors: 5 = bright green → 1 = light coral/red
 
 ---
 
@@ -123,6 +186,87 @@ When a data point cannot be found during scraping or AI evaluation:
 - Flag the criterion in the database: `data_confidence: "low"`
 - Surface the flag visually in the dashboard (muted indicator next to the score)
 - Never skip a firm due to missing data — partial scores are valid
+
+---
+
+## Phase 7 — Data Collection Spec
+
+For each firm, the scraper fetches from these sources and extracts the following signals. This is the blueprint for what each browser agent call must return before the scoring engine evaluates it.
+
+### Sources Per Firm
+
+| Source | Method | Used For |
+|---|---|---|
+| Firm website | Direct fetch | Industry sectors, services, office locations, culture cues |
+| Google Search | Search query | ENR/BDC revenue mentions, press releases, news |
+| Google News | Search query | Growth signals, expansions, new offices, awards, layoffs |
+| Glassdoor | Browser agent | Employee sentiment, headcount, revenue estimate |
+| LinkedIn (via Google) | Google search | Employee count, job posting volume, growth signals |
+
+### What to Extract Per Criterion
+
+**Growth Orientation (30%)**
+- YoY ENR ranking change (this year vs. last year)
+- LinkedIn headcount trend and active job posting count
+- News mentions of: new office openings, acquisitions, new market entries, layoffs, downsizing
+- Forward-looking language in press releases or news
+
+Score signal: Numeric ranking change is strongest. Job posting volume and expansion news are supporting signals. Layoff or decline news overrides positive signals.
+
+**Industry & Services (25%)**
+- Firm website project portfolio pages — which of Trelity's 6 sectors appear: Retail, Restaurant, Multifamily, Industrial, Data Centers, Hospitality
+- Firm website services pages — which disciplines offered: Architecture, Structural, MEP, Electrical, Plumbing, Civil
+
+Score signal: Count of Trelity sectors represented + count of matching services. Both feed into the score.
+
+**Total Revenue (15%)**
+- ENR 500 ranking and revenue figure
+- BDC Top 50 listing
+- Press releases mentioning annual revenue
+- Glassdoor revenue estimate
+- News articles referencing firm size or revenue
+
+Score signal: A dollar figure. $200M–$400M = 5. Score lower per rubric outside that range.
+
+**Cultural Alignment (10%)**
+- Glassdoor overall rating and recurring themes in reviews
+- Firm website About/Culture/Values pages
+- LinkedIn posts — what they celebrate, share, and promote
+- Awards: Best Places to Work, AIA recognition, industry honors
+- Google Reviews where applicable
+
+Score signal: AI reads sentiment and themes. Green flags: quality, collaboration, client success, employee development. Red flags: high turnover mentions, cost-cutting culture, chaotic or negative review patterns.
+
+**# of Employees (10%)**
+- LinkedIn company page employee count
+- ENR 500 headcount figure
+- Glassdoor company profile
+- Press releases mentioning team size
+
+Score signal: A headcount number. 200–400 = 5. Objective once number is found.
+
+**Geography (10%)**
+- Firm website Offices or Locations page
+- List of all office cities and states
+- Map each office city to its time zone
+
+Score signal: All East Coast = 5. Mix of East + Central = 3. Any West Coast office = 1.
+
+### Scoring Engine Input Format
+After scraping, all collected text is passed to Claude via the Anthropic API with the full rubric. Claude returns a structured JSON object:
+
+```json
+{
+  "cultural_alignment": { "score": 4, "confidence": "high", "rationale": "..." },
+  "growth_orientation": { "score": 5, "confidence": "high", "rationale": "..." },
+  "industry_services": { "score": 3, "confidence": "low", "rationale": "..." },
+  "revenue": { "score": 5, "confidence": "high", "rationale": "..." },
+  "employees": { "score": 4, "confidence": "high", "rationale": "..." },
+  "geography": { "score": 3, "confidence": "high", "rationale": "..." },
+  "composite": 4.15,
+  "ai_summary": "One paragraph BD-oriented summary of the firm's fit for Trelity."
+}
+```
 
 ---
 
@@ -196,34 +340,26 @@ When a data point cannot be found during scraping or AI evaluation:
 Rank | Composite Score | Firm Name | Source Tag | Growth | Industry | Revenue | Culture | Employees | Geography | BD Stage
 
 ### Filters
-- All / Tier 1 / CenterBuild / ≥4.0 score
+All / Tier 1 / CenterBuild / ≥4.0 score
 
-### Detail Drawer (click any firm)
+### Firm Detail Drawer (Phase 8)
+Clicking any row in the ranked table opens a right-side panel. The drawer contains:
 - Firm name, location, headcount, revenue
-- Composite score + rank
-- BD stage selector
-- AI summary paragraph
-- Per-criterion score with rationale and confidence flag
-- Notes field with timestamps
-- Last contacted date
+- Composite score badge + rank (e.g. "Rank #1 of 283 prospects")
+- BD stage selector (dropdown: Meet / Met / Get Pilot / Develop / Expand / Maintain)
+- AI summary paragraph (one paragraph, BD-oriented, explains why this firm fits Trelity)
+- Per-criterion score breakdown:
+  - Score badge (1–5, color coded)
+  - Criterion name and weight
+  - Rationale text (1–2 sentences from AI)
+  - Confidence flag if data_confidence is low
+- Notes field — free text, timestamped entries
+- Last contacted date picker
+- Close button returns to full table view
 
 ### CSV Export
 One button exports all firms with:
-Firm Name | Tier | Source | BD Stage | Last Contacted | Notes | Growth Score | Industry Score | Revenue Score | Culture Score | Employees Score | Geography Score | Composite Score | [Confidence flags per criterion]
-
----
-
-## Brand Spec
-
-| Element | Value |
-|---|---|
-| Primary | Navy blue `#1B3A6B` |
-| Accent | Chartreuse/lime `#C5D82E` |
-| Background | Off-white `#F5F4EF` |
-| Typography | Clean sans-serif |
-| Aesthetic | Professional, minimal, architecture-appropriate |
-
-Score badge colors: 5 = bright green → 1 = light coral/red
+Firm Name | Tier | Source | BD Stage | Last Contacted | Notes | Growth Score | Industry Score | Revenue Score | Culture Score | Employees Score | Geography Score | Composite Score | Confidence flags per criterion
 
 ---
 
@@ -249,6 +385,9 @@ Score badge colors: 5 = bright green → 1 = light coral/red
 | Hosting | Vercel |
 | Auth | None for POC |
 | BD tracking | Stage + notes + last contacted per firm |
+| Scoring execution | Synchronous for POC — firm submitted, user waits for score |
+| Frontend folder | `dashboard/` (not `frontend/`) |
+| Logo | TrelityLogo.png in `dashboard/public/` |
 
 ---
 
@@ -265,7 +404,7 @@ Score badge colors: 5 = bright green → 1 = light coral/red
 
 ## About Nick
 
-Nick is a product manager and AI consultant — not a coder. Claude Code handles all code execution, debugging, and testing. When communicating:
+Nick is a product manager and AI consultant (Armatura) — not a coder. Claude Code handles all code execution, debugging, and testing. When communicating:
 - Lead with what to do and why
 - Explain architectural decisions in plain language
 - State assumptions and proceed rather than asking clarifying questions
