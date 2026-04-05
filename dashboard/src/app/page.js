@@ -117,7 +117,7 @@ export default function HomePage() {
             className="app-logo-img"
           />
           <span className="app-logo-text">Trelity Prospect Scout</span>
-          <span className="app-logo-sub">BY ARMATURA</span>
+
         </div>
         <div className="header-actions">
           <button className="btn btn-ghost" onClick={fetchFirms} id="btn-refresh">

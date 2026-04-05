@@ -94,14 +94,6 @@ body {
   letter-spacing: -0.02em;
 }
 
-.app-logo-sub {
-  font-size: 11px;
-  font-weight: 500;
-  color: #A0A8B8;
-  margin-left: 14px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
 
 .header-actions {
   display: flex;
