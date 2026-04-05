@@ -240,6 +240,7 @@ body {
 .data-table th.col-center,
 .data-table td.col-center {
   text-align: center;
+  vertical-align: middle;
 }
 
 .data-table tbody tr {
@@ -325,7 +326,8 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  width: 56px;
+  position: relative;
   vertical-align: middle;
 }
 
@@ -361,12 +363,15 @@ body {
 /* ── Low Confidence Indicator ───────────────────────────────────────────── */
 
 .low-confidence {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: #E8820C;
-  display: inline-block;
-  flex-shrink: 0;
+  display: block;
   flex-shrink: 0;
 }
 
