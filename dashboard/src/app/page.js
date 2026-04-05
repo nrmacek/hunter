@@ -116,7 +116,7 @@ export default function HomePage() {
             alt="Trelity"
             className="app-logo-img"
           />
-          <span className="app-logo-text">Trelity Prospect Hunter</span>
+          <span className="app-logo-text">Trelity Prospect Scout</span>
           <span className="app-logo-sub">BY ARMATURA</span>
         </div>
         <div className="header-actions">

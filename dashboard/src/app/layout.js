@@ -1,7 +1,7 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Hunter — Trelity Prospect Dashboard",
+  title: "Trelity Prospect Scout",
   description:
     "AI-powered prospect evaluation and ranking tool for Trelity Inc.",
 };
