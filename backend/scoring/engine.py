@@ -43,21 +43,22 @@ def _stub_score(name: str) -> dict:
 def _get_known_data(firm_name: str) -> dict:
     """
     Look up any pre-existing data for this firm from the DB.
-    Returns revenue_m and employees if available.
+    Returns employees (LinkedIn headcount) only — revenue is excluded because
+    the spreadsheet stores sector-specific revenue, not total firm revenue,
+    which would score incorrectly. Claude estimates total revenue instead.
     """
     try:
         from database import get_connection
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT revenue_m, employees FROM firms WHERE name = ?",
+            "SELECT employees FROM firms WHERE name = ?",
             (firm_name,)
         )
         row = cursor.fetchone()
         conn.close()
         if row:
             return {
-                "revenue_m": row["revenue_m"],
                 "employees": row["employees"],
             }
     except Exception as e:
