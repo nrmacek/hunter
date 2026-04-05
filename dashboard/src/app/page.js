@@ -91,6 +91,7 @@ export default function HomePage() {
   // ── Stats ──
 
   const totalFirms = firms.length;
+  const realScored = firms.filter((f) => f.score?.is_real_score === 1).length;
   const avgComposite =
     totalFirms > 0
       ? (
@@ -130,8 +131,13 @@ export default function HomePage() {
         {/* Stats Bar */}
         <div className="stats-bar" id="stats-bar">
           <div className="stat-card">
-            <div className="stat-label">Total Firms</div>
-            <div className="stat-value">{totalFirms}</div>
+            <div className="stat-label">AI Scored</div>
+            <div className="stat-value">
+              {realScored}
+              <span style={{ fontSize: "0.7em", color: "var(--color-text-muted)", fontWeight: 400 }}>
+                /{totalFirms}
+              </span>
+            </div>
           </div>
           <div className="stat-card">
             <div className="stat-label">Avg. Score</div>

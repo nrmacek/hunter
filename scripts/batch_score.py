@@ -56,6 +56,7 @@ def get_firms_to_score(conn, rescore: bool, tier: int | None) -> list[dict]:
 
 def write_score(conn, firm_id: int, scores: dict) -> None:
     cursor = conn.cursor()
+    is_real = 0 if scores.get("score_notes", "").startswith("Stub") else 1
     cursor.execute("DELETE FROM scores WHERE firm_id = ?", (firm_id,))
     cursor.execute("""
         INSERT INTO scores (
@@ -66,8 +67,8 @@ def write_score(conn, firm_id: int, scores: dict) -> None:
             revenue,            revenue_confidence,
             employees,          employees_confidence,
             geography,          geography_confidence,
-            composite,          score_notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            composite,          score_notes, is_real_score
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         firm_id,
         scores["cultural_alignment"], scores["cultural_confidence"],
@@ -76,7 +77,7 @@ def write_score(conn, firm_id: int, scores: dict) -> None:
         scores["revenue"],            scores["revenue_confidence"],
         scores["employees"],          scores["employees_confidence"],
         scores["geography"],          scores["geography_confidence"],
-        scores["composite"],          scores["score_notes"],
+        scores["composite"],          scores["score_notes"], is_real,
     ))
     conn.commit()
 

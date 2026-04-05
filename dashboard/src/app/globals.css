@@ -360,17 +360,13 @@ body {
 /* ── Low Confidence Indicator ───────────────────────────────────────────── */
 
 .low-confidence {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: var(--color-border);
+  background: #E8820C;
   display: inline-block;
   flex-shrink: 0;
-  opacity: 0.7;
-}
-
-.low-confidence[title]::after {
-  content: '';
+  flex-shrink: 0;
 }
 
 /* ── BD Stage ───────────────────────────────────────────────────────────── */

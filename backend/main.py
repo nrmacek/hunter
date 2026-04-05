@@ -67,6 +67,7 @@ def score_endpoint(req: ScoreRequest):
         firm_id = cursor.lastrowid
 
     # Insert score
+    is_real = 0 if scores.get("score_notes", "").startswith("Stub") else 1
     cursor.execute(
         """INSERT INTO scores (
             firm_id,
@@ -76,8 +77,8 @@ def score_endpoint(req: ScoreRequest):
             revenue, revenue_confidence,
             employees, employees_confidence,
             geography, geography_confidence,
-            composite, score_notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            composite, score_notes, is_real_score
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             firm_id,
             scores["cultural_alignment"], scores["cultural_confidence"],
@@ -86,7 +87,7 @@ def score_endpoint(req: ScoreRequest):
             scores["revenue"], scores["revenue_confidence"],
             scores["employees"], scores["employees_confidence"],
             scores["geography"], scores["geography_confidence"],
-            scores["composite"], scores["score_notes"],
+            scores["composite"], scores["score_notes"], is_real,
         ),
     )
 
@@ -115,7 +116,7 @@ def list_firms():
                s.revenue AS score_revenue, s.revenue_confidence,
                s.employees AS score_employees, s.employees_confidence,
                s.geography, s.geography_confidence,
-               s.composite, s.scored_at, s.score_notes
+               s.composite, s.scored_at, s.score_notes, s.is_real_score
         FROM firms f
         LEFT JOIN scores s ON s.firm_id = f.id
         ORDER BY s.composite DESC
@@ -156,6 +157,7 @@ def list_firms():
                 composite=row["composite"],
                 scored_at=row["scored_at"],
                 score_notes=row["score_notes"],
+                is_real_score=row["is_real_score"] or 0,
             ) if row["composite"] is not None else None,
         )
         results.append(firm)
@@ -178,7 +180,7 @@ def get_firm(firm_id: int):
                s.revenue AS score_revenue, s.revenue_confidence,
                s.employees AS score_employees, s.employees_confidence,
                s.geography, s.geography_confidence,
-               s.composite, s.scored_at, s.score_notes
+               s.composite, s.scored_at, s.score_notes, s.is_real_score
         FROM firms f
         LEFT JOIN scores s ON s.firm_id = f.id
         WHERE f.id = ?

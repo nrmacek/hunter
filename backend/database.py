@@ -64,6 +64,7 @@ def init_db() -> None:
             composite               REAL,
             scored_at               TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             score_notes             TEXT,
+            is_real_score           INTEGER NOT NULL DEFAULT 0,
             FOREIGN KEY (firm_id) REFERENCES firms(id) ON DELETE CASCADE
         )
     """)
