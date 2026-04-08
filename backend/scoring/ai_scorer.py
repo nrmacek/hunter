@@ -79,9 +79,21 @@ SCORING RUBRIC:
    If headcount unknown, score 2 and mark confidence low
 
 6. geography (weight 10%)
-   1 = Any West Coast or international offices (outside US East/Central)
-   3 = All offices East Coast + Central time zone mix
-   5 = All offices East Coast only
+   HQ location is the primary factor. Score using two steps:
+
+   Step 1 — HQ sets the base:
+     East Coast HQ (ME, NH, VT, MA, RI, CT, NY, NJ, PA, DE, MD, VA, NC, SC, GA, FL, DC) → base 4
+     Central time zone HQ (OH, MI, IN, IL, WI, MN, IA, MO, ND, SD, NE, KS, TX, OK, AR, LA, MS, AL, TN, KY, WV) → base 3
+     Mountain / West Coast / International HQ → base 1
+
+   Step 2 — Satellite offices adjust:
+     All offices East Coast only → +1
+     East Coast + Central mix → 0
+     Any Mountain or West Coast office → −1
+     Any international offices → −1
+
+   Final = HQ base + modifier, clamped to 1–5.
+   Examples: NJ HQ all East Coast = 5 | NJ HQ + Central offices = 4 | NJ HQ + one West Coast = 3 | TX HQ all Central = 3 | Seattle HQ = 1
    If office locations unknown, score 2 and mark confidence low
 
 MISSING DATA RULE: If you cannot find data for a criterion, score it 2 and set confidence to "low".

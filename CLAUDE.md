@@ -203,9 +203,23 @@ Max score = 5.0
 - Sources: LinkedIn, Glassdoor, ENR
 
 **6. Geography (10%)**
-- 1: At least one East Coast office (minimum threshold)
-- 3: All offices on East Coast or Central time zone
-- 5: All offices on East Coast only
+HQ location carries the highest weight. Satellite offices adjust the score up or down.
+
+Step 1 — HQ sets the base:
+- East Coast HQ (ME, NH, VT, MA, RI, CT, NY, NJ, PA, DE, MD, VA, NC, SC, GA, FL, DC) → base 4
+- Central time zone HQ (OH, MI, IN, IL, WI, MN, IA, MO, ND, SD, NE, KS, TX, OK, AR, LA, MS, AL, TN, KY, WV) → base 3
+- Mountain / West Coast / International HQ → base 1
+
+Step 2 — Satellite offices adjust:
+- All offices East Coast only → +1
+- East Coast + Central mix → 0
+- Any Mountain or West Coast office → −1
+- Any international offices → −1
+
+Final score = HQ base + modifier, clamped to 1–5.
+
+Examples: NJ HQ, all East Coast = 5 | NJ HQ + Central offices = 4 | NJ HQ + one West Coast = 3 | TX HQ all Central = 3 | Seattle HQ = 1
+
 - Sources: Firm website office locations
 
 ---
@@ -281,7 +295,7 @@ Score signal: A headcount number. 200–400 = 5. Objective once number is found.
 - List of all office cities and states
 - Map each office city to its time zone
 
-Score signal: All East Coast = 5. Mix of East + Central = 3. Any West Coast office = 1.
+Score signal: HQ location is primary. East Coast HQ = base 4. Central HQ = base 3. West/Mountain/International HQ = base 1. Then: all offices East Coast only = +1; East + Central mix = 0; any West/Mountain office = −1; any international = −1. Clamp to 1–5.
 
 ### Scoring Engine Input Format
 After scraping, all collected text is passed to Claude via the Anthropic API with the full rubric. Claude returns a structured JSON object:
