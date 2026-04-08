@@ -1,11 +1,11 @@
-# CLAUDE.md — Hunter by Trelity
-*Last updated: April 4, 2026*
+# CLAUDE.md — Trelity Prospect Scout
+*Last updated: April 8, 2026*
 
 ---
 
 ## What This Project Is
 
-**Hunter** is an AI-powered prospect evaluation and ranking tool built for Trelity Inc. — a US-based architecture/engineering outsourcing firm. It takes a list of A/E firm names, scrapes publicly available data, scores each firm against 6 weighted criteria, and displays a ranked list in a visual dashboard.
+**Trelity Prospect Scout** is an AI-powered prospect evaluation and ranking tool built for Trelity Inc. — a US-based architecture/engineering outsourcing firm. It takes a list of A/E firm names, scrapes publicly available data, scores each firm against 6 weighted criteria, and displays a ranked list in a visual dashboard.
 
 **Built by:** Nick Macek (AI consultant, Armatura)
 **For:** John Mickey (CEO) and Jason (Principal BD Lead), Trelity Inc.
@@ -21,17 +21,22 @@ hunter/
 ├── CLAUDE.md          ← this file, always in repo root
 ├── README.md
 ├── backend/           ← Python FastAPI + SQLite
+│   └── scoring/
+│       ├── scraper.py
+│       ├── ai_scorer.py
+│       └── engine.py
 ├── dashboard/         ← Next.js frontend
 │   ├── public/
-│   │   └── TrelityLogo.png   ← Trelity logo, already in place
-│   └── src/
-├── data/
-├── docs/
-├── scripts/
+│   │   └── TrelityLogo.png
+│   └── src/app/
+│       └── page.js
+├── data/              ← Excel source files
+├── docs/              ← SCORING_PLAYBOOK.md lives here
+├── scripts/           ← batch_score.py, import_firms.py, audit_firm.py, rescore_growth.py
 └── tests/
 ```
 
-Note: There may be additional CLAUDE.md files inside `backend/` or `dashboard/` from earlier setup. Those should be deleted — this root-level file is the single source of truth.
+Note: CLAUDE.md belongs in the repo root only. Delete any copies inside backend/ or dashboard/.
 
 ---
 
@@ -43,7 +48,7 @@ Note: There may be additional CLAUDE.md files inside `backend/` or `dashboard/` 
 | Database | SQLite |
 | Frontend | Next.js (React) — lives in `dashboard/` |
 | Hosting | Vercel (when ready to share) |
-| Scraping | Python + Antigravity browser agents |
+| Scraping | Python HTTP fetching + DDG search |
 
 ---
 
@@ -54,7 +59,7 @@ Note: There may be additional CLAUDE.md files inside `backend/` or `dashboard/` 
 | Machine | MacBook Air M1, macOS Tahoe |
 | IDE | Google Antigravity |
 | Agent | Claude Opus 4.6 (in Antigravity) |
-| Terminal agent | Claude Code |
+| Terminal agent | Claude Code (Claude Pro subscription) |
 | Python | 3.12.3 via pyenv |
 | Node | v22.18.0 |
 | Version control | Git + GitHub |
@@ -63,30 +68,22 @@ Note: There may be additional CLAUDE.md files inside `backend/` or `dashboard/` 
 
 ## Phase Status
 
-- ✅ Phase 1 — Mac environment (Python 3.12, Homebrew, Node, Git)
+- ✅ Phase 1 — Mac environment
 - ✅ Phase 2 — GitHub connected, repo created
 - ✅ Phase 3 — Folder structure created and pushed
 - ✅ Phase 4 — Antigravity configured, Claude Code installed, CLAUDE.md in place
-- ✅ Phase 5 — Tech stack scaffold (FastAPI backend + SQLite + Next.js dashboard running locally)
-- ✅ Phase 6 — Real firm data in (120 firms: 34 Tier 1 + 72 Tier 2 + 14 Tier 3, stub scores)
-- 🔲 **Phase 7 — Real scraping and AI scoring (current)**
-- 🔲 Phase 8 — Full UX (drawer, BD tracking, bulk upload, CSV export)
+- ✅ Phase 5 — Tech stack scaffold (FastAPI + SQLite + Next.js running locally)
+- ✅ Phase 6 — Real firm data loaded (120 firms from Master Target List)
+- ✅ Phase 7 — Real scraping and AI scoring (120/120 firms AI-scored)
+- 🔲 **Phase 8 — Full UX (current)**
 - 🔲 Phase 9 — Vercel deploy
 
 ---
 
-## Phase Definitions
-
-### Phase 6 — Real Firm Data
-Replace the 5 seed firms with real firm names from the Master Target List Excel file (`data/Master_Target_List_2_0.xlsx`). Scores remain stub values for now. Done when all Tier 1, Tier 2, and Tier 3 firms are in the database.
-
-### Phase 7 — Real Scraping and AI Scoring
-Replace stub scorer with real data collection and AI evaluation. Done when each firm has scores derived from actual public data sources, with confidence flags on any criterion where data could not be found.
-
-### Phase 8 — Full UX
+## Phase 8 — Full UX
 Phase 8 is complete when all of the following are built and working:
 
-#### 1. Firm Detail Drawer
+### 1. Firm Detail Drawer
 Clicking any row in the ranked table opens a right-side panel containing:
 - Firm name, location, headcount, revenue
 - Composite score badge + rank (e.g. "Rank #1 of 120 prospects")
@@ -95,63 +92,29 @@ Clicking any row in the ranked table opens a right-side panel containing:
 - Per-criterion score breakdown:
   - Score badge (1–5, color coded)
   - Criterion name and weight
-  - Rationale text (1–2 sentences from AI)
-  - Confidence indicator if low confidence
+  - AI rationale text (1–2 sentences explaining why that score was given)
+  - Confidence indicator if low confidence (orange dot)
 - Timestamped notes field — free text, each entry logged with date/time
 - Last contacted date picker
 - Close button returns to full table view
 
-#### 2. Single Firm Add Form
-A form in the dashboard to add one firm at a time:
+### 2. Single Firm Add Form
 - Input: firm name + source tag
 - On submit: queues firm for scraping and AI scoring
 - Firm appears in ranked table when scoring completes
 
-#### 3. Bulk CSV/Excel Upload
-Upload a spreadsheet of firm names for batch ingestion:
+### 3. Bulk CSV/Excel Upload
 - Accepts .csv or .xlsx
 - Maps firm name and source tag columns
 - Triggers batch scoring on all uploaded firms
 
-#### 4. CSV Export
-One button exports the full ranked list as a CSV with these columns:
+### 4. CSV Export
+One button exports the full ranked list as CSV:
 Firm Name | Tier | Source | BD Stage | Last Contacted | Notes | Growth Score | Industry Score | Revenue Score | Culture Score | Employees Score | Geography Score | Composite Score | Confidence flags per criterion
 
-### Phase 9 — Vercel Deploy
-Push to Vercel. Done when Jason and John can access the dashboard via URL without Nick's machine running.
-
 ---
 
-## Branding & Header Spec (Confirmed April 4, 2026)
-
-### Tool Name
-**Trelity Prospect Hunter**
-Subtext: **BY ARMATURA** — lighter gray, smaller font, all caps, same line or directly below
-
-### Header Layout
-- Logo: `TrelityLogo.png` from `dashboard/public/TrelityLogo.png`
-  - Render as `<img src="/TrelityLogo.png" />` in the header component
-  - Height: 32–36px, width auto, vertically centered in header
-  - Replaces any placeholder grid or "H" icon entirely
-- Title: "Trelity Prospect Hunter" in white, clean sans-serif, medium weight
-- Subtext: "BY ARMATURA" in lighter gray (#A0A8B8 or similar), smaller (11–12px), all caps, letter-spaced
-- Header background: Navy `#1B3A6B`
-
-### Brand Colors
-| Element | Value |
-|---|---|
-| Primary | Navy blue `#1B3A6B` |
-| Accent | Chartreuse/lime `#C5D82E` |
-| Background | Off-white `#F5F4EF` |
-| Header text | White |
-| Subtext | Light gray `#A0A8B8` |
-| Typography | Clean sans-serif |
-
-Score badge colors: 5 = bright green → 1 = light coral/red
-
----
-
-## Scoring Model (Confirmed April 2, 2026 — Do Not Change)
+## Scoring Model (Confirmed April 2, 2026 — Do Not Change Weights)
 
 ### Weights
 
@@ -171,56 +134,67 @@ Score = (C1 × 0.10) + (C2 × 0.30) + (C3 × 0.25) + (C4 × 0.15) + (C5 × 0.10)
 Max score = 5.0
 ```
 
-### Scoring Rubric (1–5 per criterion)
+---
 
-**1. Cultural Alignment (10%)**
-- 1: Minimal cultural alignment
-- 5: Strong alignment — quality focus, employee care, client success orientation
-- Sources: Firm website, LinkedIn, Glassdoor, Google Reviews, news
+## Scoring Rubric — Complete 1–5 Scale (Updated April 8, 2026)
 
-**2. Growth Orientation (30%)**
-- 1: Revenue/headcount declining
-- 5: >10% Y/Y growth, forward-thinking, actively expanding
-- Sources: ENR rankings, LinkedIn job postings, news articles
+### 1. Cultural Alignment (10%)
+- **1:** Minimal alignment or no concern for corporate culture
+- **2:** Limited cultural signals — generic corporate language, no evidence of employee care or quality focus
+- **3:** Some cultural alignment visible — quality or employee focus mentioned but not central to firm identity
+- **4:** Clear cultural alignment — quality and employee focus evident but not a defining characteristic of the firm's identity
+- **5:** Strong cultural alignment with Trelity. Focused on providing top quality services and deliverables. Focused on care for their employees and care for their client's success.
+- **Sources:** Firm website, LinkedIn posts, Glassdoor, Google Reviews, news articles
 
-**3. Type of Industry & Services (25%)**
-- Industry score: 1 = serves one Trelity sector; 3 = serves some; 5 = serves all
-- Services score: 1 = one matching service; 3 = two or more; 5 = full A/E suite
-- Trelity's target sectors: Retail, Restaurant, Multifamily, Industrial, Data Centers, Hospitality
-- Full service suite: Architecture, Structural, MEP, Electrical, Plumbing, Civil
-- Sources: Firm website
+### 2. Growth Orientation (30%)
+- **1:** Steady decline in annual revenue and employee size
+- **2:** Flat or inconsistent growth — some years up, some down, no clear trajectory
+- **3:** Modest but consistent growth of 1–5% Y/Y, stable hiring, no major expansion signals
+- **4:** Consistent growth of 5–10% Y/Y, forward-thinking, some expansion activity but not aggressive
+- **5:** Focused on fast growth. Forward thinking. Proven record of >10% growth Y/Y.
+- **Sources:** ENR 500 list, news articles, job posting websites, LinkedIn, firm's /news or /press page
 
-**4. Total Revenue (15%)**
-- 1: <$20M or >$1B
-- 3: $20M–$100M or $600M–$1B
-- 5 (sweet spot): $200M–$400M
-- Sources: ENR 500, BDC rankings, Glassdoor, company announcements
+### 3. Type of Industry Served (combined with Services = 25% total)
+- **1:** Firm serves within only one of Trelity's target industries
+- **2:** Firm works in one or two of Trelity's current sectors but limited overlap
+- **3:** Firm works in some of the industry sectors Trelity currently works in
+- **4:** Firm works in most of Trelity's current sectors with some future target sectors represented
+- **5:** Firm services all of Trelity's current industry sectors and the ones Trelity wants to target in the future
+- **Target sectors:** Retail, Restaurant, Multifamily, Industrial, Data Centers, Hospitality
+- **Sources:** Client's website, project portfolio pages
 
-**5. # of Employees (10%)**
-- 1: <100 or >1,000
-- 3: 100–200 or 400–600
-- 5 (sweet spot): 200–400
-- Sources: LinkedIn, Glassdoor, ENR
+### 4. Services Provided (combined with Industry = 25% total)
+- **1:** Firm provides only one of the services Trelity provides
+- **2:** Firm provides one matching service with limited scope
+- **3:** Firm provides two or more professional services that match Trelity's
+- **4:** Firm provides three or more matching services, close to but not quite the full ASMEP+Civil suite
+- **5:** Firm provides a full range of services (Architecture, Structural, MEP, Electrical, Plumbing, Civil)
+- **Sources:** Client's website, services pages
 
-**6. Geography (10%)**
-HQ location carries the highest weight. Satellite offices adjust the score up or down.
+### 5. Total Revenue (15%)
+- **1:** Less than $20M or more than $1 billion
+- **2:** $20M–$100M or $600M–$1B — outside sweet spot
+- **3:** Less than $100M or greater than $600M
+- **4:** $150M–$200M or $400M–$450M — approaching or just outside sweet spot
+- **5:** Between $200M and $400M (sweet spot)
+- **Sources:** ENR 500 list, company announcements, Glassdoor
 
-Step 1 — HQ sets the base:
-- East Coast HQ (ME, NH, VT, MA, RI, CT, NY, NJ, PA, DE, MD, VA, NC, SC, GA, FL, DC) → base 4
-- Central time zone HQ (OH, MI, IN, IL, WI, MN, IA, MO, ND, SD, NE, KS, TX, OK, AR, LA, MS, AL, TN, KY, WV) → base 3
-- Mountain / West Coast / International HQ → base 1
+### 6. # of Employees (10%)
+- **1:** Less than 100 employees or more than 1,000 employees
+- **2:** 100–200 or 400–600 employees — adjacent to sweet spot
+- **3:** Outside sweet spot but not extreme
+- **4:** 150–200 or 400–500 employees — approaching or just outside sweet spot
+- **5:** Between 200 and 400 employees (sweet spot)
+- **Sources:** ENR 500 list, company announcements, Glassdoor, LinkedIn
 
-Step 2 — Satellite offices adjust:
-- All offices East Coast only → +1
-- East Coast + Central mix → 0
-- Any Mountain or West Coast office → −1
-- Any international offices → −1
-
-Final score = HQ base + modifier, clamped to 1–5.
-
-Examples: NJ HQ, all East Coast = 5 | NJ HQ + Central offices = 4 | NJ HQ + one West Coast = 3 | TX HQ all Central = 3 | Seattle HQ = 1
-
-- Sources: Firm website office locations
+### 7. Geography (10%)
+- **1:** Default score — no East Coast presence confirmed
+- **2:** At least one office on East Coast
+- **3:** All offices located on East Coast or in Central time zone
+- **4:** Majority of offices on East Coast with one or two Central time zone offices
+- **5:** All offices located on East Coast only
+- **Note:** Offshore delivery offices (e.g. Mexico production office) do not count against Geography score — only US office locations are evaluated
+- **Sources:** Client's website office locations page — always fetch the /offices or /locations page specifically, do not rely on homepage alone
 
 ---
 
@@ -229,77 +203,35 @@ Examples: NJ HQ, all East Coast = 5 | NJ HQ + Central offices = 4 | NJ HQ + one 
 When a data point cannot be found during scraping or AI evaluation:
 - Default score for that criterion: **2**
 - Flag the criterion in the database: `data_confidence: "low"`
-- Surface the flag visually in the dashboard (muted indicator next to the score)
+- Surface the flag visually in the dashboard (orange dot next to score badge)
+- No dot = high confidence; orange dot = low confidence
 - Never skip a firm due to missing data — partial scores are valid
 
 ---
 
-## Phase 7 — Data Collection Spec
-
-For each firm, the scraper fetches from these sources and extracts the following signals. This is the blueprint for what each browser agent call must return before the scoring engine evaluates it.
+## Data Collection Spec
 
 ### Sources Per Firm
 
 | Source | Method | Used For |
 |---|---|---|
-| Firm website | Direct fetch | Industry sectors, services, office locations, culture cues |
-| Google Search | Search query | ENR/BDC revenue mentions, press releases, news |
-| Google News | Search query | Growth signals, expansions, new offices, awards, layoffs |
-| Glassdoor | Browser agent | Employee sentiment, headcount, revenue estimate |
-| LinkedIn (via Google) | Google search | Employee count, job posting volume, growth signals |
+| Firm website homepage | Direct HTTP fetch | Initial content, services overview, culture cues |
+| Firm /services page | Direct HTTP fetch | Services provided scoring |
+| Firm /offices or /locations page | Direct HTTP fetch | Geography scoring — always fetch this specifically |
+| Firm /news or /press page | Direct HTTP fetch | Growth signals, expansion announcements |
+| DDG Search | Query + "architecture firm" | ENR/BDC mentions, general firm info — always append "architecture firm" to avoid name collisions |
+| DDG News Search | "Firm Name architecture growth OR expansion OR acquisition OR revenue" | Growth orientation signals |
+| LinkedIn job postings via DDG | "site:linkedin.com/jobs Firm Name" | Active hiring as growth proxy |
+| Glassdoor via DDG | DDG search | Employee sentiment, headcount estimate |
 
-### What to Extract Per Criterion
+### Scraper Rules
+- Always append "architecture firm" or "AE firm" to DDG search queries to avoid name collisions with non-architecture companies
+- Always fetch /offices or /locations page specifically for Geography — do not rely on homepage only
+- Always fetch /news or /press page for Growth signals
+- If DDG rate-limits, add delay and retry — do not default to stub scores
+- Offshore/international offices do not count for Geography scoring
 
-**Growth Orientation (30%)**
-- YoY ENR ranking change (this year vs. last year)
-- LinkedIn headcount trend and active job posting count
-- News mentions of: new office openings, acquisitions, new market entries, layoffs, downsizing
-- Forward-looking language in press releases or news
-
-Score signal: Numeric ranking change is strongest. Job posting volume and expansion news are supporting signals. Layoff or decline news overrides positive signals.
-
-**Industry & Services (25%)**
-- Firm website project portfolio pages — which of Trelity's 6 sectors appear: Retail, Restaurant, Multifamily, Industrial, Data Centers, Hospitality
-- Firm website services pages — which disciplines offered: Architecture, Structural, MEP, Electrical, Plumbing, Civil
-
-Score signal: Count of Trelity sectors represented + count of matching services. Both feed into the score.
-
-**Total Revenue (15%)**
-- ENR 500 ranking and revenue figure
-- BDC Top 50 listing
-- Press releases mentioning annual revenue
-- Glassdoor revenue estimate
-- News articles referencing firm size or revenue
-
-Score signal: A dollar figure. $200M–$400M = 5. Score lower per rubric outside that range.
-
-**Cultural Alignment (10%)**
-- Glassdoor overall rating and recurring themes in reviews
-- Firm website About/Culture/Values pages
-- LinkedIn posts — what they celebrate, share, and promote
-- Awards: Best Places to Work, AIA recognition, industry honors
-- Google Reviews where applicable
-
-Score signal: AI reads sentiment and themes. Green flags: quality, collaboration, client success, employee development. Red flags: high turnover mentions, cost-cutting culture, chaotic or negative review patterns.
-
-**# of Employees (10%)**
-- LinkedIn company page employee count
-- ENR 500 headcount figure
-- Glassdoor company profile
-- Press releases mentioning team size
-
-Score signal: A headcount number. 200–400 = 5. Objective once number is found.
-
-**Geography (10%)**
-- Firm website Offices or Locations page
-- List of all office cities and states
-- Map each office city to its time zone
-
-Score signal: HQ location is primary. East Coast HQ = base 4. Central HQ = base 3. West/Mountain/International HQ = base 1. Then: all offices East Coast only = +1; East + Central mix = 0; any West/Mountain office = −1; any international = −1. Clamp to 1–5.
-
-### Scoring Engine Input Format
-After scraping, all collected text is passed to Claude via the Anthropic API with the full rubric. Claude returns a structured JSON object:
-
+### Scoring Engine Output Format
 ```json
 {
   "cultural_alignment": { "score": 4, "confidence": "high", "rationale": "..." },
@@ -354,6 +286,7 @@ After scraping, all collected text is passed to Claude via the Anthropic API wit
 | composite | REAL | Weighted composite 0–5 |
 | scored_at | TIMESTAMP | |
 | score_notes | TEXT | AI rationale summary |
+| is_real_score | BOOLEAN | True = AI scored, False = stub |
 
 ---
 
@@ -371,15 +304,17 @@ After scraping, all collected text is passed to Claude via the Anthropic API wit
 
 ---
 
-## Dashboard UX (Confirmed April 4, 2026)
+## Dashboard UX
 
 ### Access
 - Hosted on Vercel — accessible via URL, no install required
 - No login required for POC
 
-### Firm Input Methods
-1. **Single firm form** — Enter firm name + source tag, submit, system scrapes and scores
-2. **Bulk CSV/Excel upload** — Upload a spreadsheet of firm names for batch ingestion (e.g. full CenterBuild list)
+### Header
+- Logo: TrelityLogo.png from `dashboard/public/`
+- Title: "Trelity Prospect Scout" in white
+- Subtext: "BY ARMATURA" in light gray (#A0A8B8), smaller, all caps
+- Background: Navy #1B3A6B
 
 ### Ranked Table Columns
 Rank | Composite Score | Firm Name | Source Tag | Growth | Industry | Revenue | Culture | Employees | Geography | BD Stage
@@ -387,24 +322,23 @@ Rank | Composite Score | Firm Name | Source Tag | Growth | Industry | Revenue | 
 ### Filters
 All / Tier 1 / CenterBuild / ≥4.0 score
 
-### Firm Detail Drawer (Phase 8)
-Clicking any row in the ranked table opens a right-side panel. The drawer contains:
-- Firm name, location, headcount, revenue
-- Composite score badge + rank (e.g. "Rank #1 of 283 prospects")
-- BD stage selector (dropdown: Meet / Met / Get Pilot / Develop / Expand / Maintain)
-- AI summary paragraph (one paragraph, BD-oriented, explains why this firm fits Trelity)
-- Per-criterion score breakdown:
-  - Score badge (1–5, color coded)
-  - Criterion name and weight
-  - Rationale text (1–2 sentences from AI)
-  - Confidence flag if data_confidence is low
-- Notes field — free text, timestamped entries
-- Last contacted date picker
-- Close button returns to full table view
+### Stat Cards
+AI Scored (X/120) | Avg Score | Top Score | Showing
 
-### CSV Export
-One button exports all firms with:
-Firm Name | Tier | Source | BD Stage | Last Contacted | Notes | Growth Score | Industry Score | Revenue Score | Culture Score | Employees Score | Geography Score | Composite Score | Confidence flags per criterion
+---
+
+## Brand Spec
+
+| Element | Value |
+|---|---|
+| Primary | Navy blue `#1B3A6B` |
+| Accent | Chartreuse/lime `#C5D82E` |
+| Background | Off-white `#F5F4EF` |
+| Subtext | Light gray `#A0A8B8` |
+| Typography | Clean sans-serif |
+
+Score badge colors: 5 = bright green → 1 = light coral/red
+Confidence: orange dot (#E8820C) = low confidence; no dot = high confidence
 
 ---
 
@@ -430,9 +364,23 @@ Firm Name | Tier | Source | BD Stage | Last Contacted | Notes | Growth Score | I
 | Hosting | Vercel |
 | Auth | None for POC |
 | BD tracking | Stage + notes + last contacted per firm |
-| Scoring execution | Synchronous for POC — firm submitted, user waits for score |
+| Scoring execution | Synchronous for POC |
 | Frontend folder | `dashboard/` (not `frontend/`) |
 | Logo | TrelityLogo.png in `dashboard/public/` |
+| Tool name | Trelity Prospect Scout (not Hunter) |
+| Revenue data | Ignore spreadsheet revenue figures — let Claude estimate from scraped data and training knowledge |
+| Offshore offices | Do not penalize Geography score for offshore delivery offices |
+| Confidence display | Orange dot in table for low confidence; rationale text in drawer explains reasoning — no additional label needed |
+
+---
+
+## Future Features Backlog (Post-POC)
+
+1. **Weight adjustment** — Let users tune criterion weights and have all firms re-rank instantly
+2. **Manual score override** — User overrides any criterion score with their own 1–5, adds a note, composite recalculates. Original AI score stays visible.
+3. **Shareable drawer links** — Unique URL per firm (e.g. scout.trelity.com/firms/hfa) that can be emailed to team members
+4. **Feedback loop / model learning** — Overrides, weight changes, and BD pipeline outcomes feed back into scoring prompt refinement over time
+5. **Timestamped notes** — Already in Phase 8 scope, confirmed priority
 
 ---
 
@@ -447,9 +395,45 @@ Firm Name | Tier | Source | BD Stage | Last Contacted | Notes | Growth Score | I
 
 ---
 
+## Audit Tool
+
+```bash
+cd ~/Projects/hunter/backend
+source venv/bin/activate
+
+# Full audit with live re-scrape
+python ../scripts/audit_firm.py "Firm Name"
+
+# Stored scores only (instant)
+python ../scripts/audit_firm.py "Firm Name" --stored-only
+
+# List all firms ranked
+python ../scripts/audit_firm.py --list
+```
+
+---
+
+## Growth Re-Score Tool
+
+```bash
+cd ~/Projects/hunter/backend
+source venv/bin/activate
+
+# Re-score only firms with low-confidence Growth scores
+python ../scripts/rescore_growth.py
+
+# Re-score all firms
+python ../scripts/rescore_growth.py --all
+
+# Test on N firms first
+python ../scripts/rescore_growth.py --limit 5
+```
+
+---
+
 ## About Nick
 
-Nick is a product manager and AI consultant (Armatura) — not a coder. Claude Code handles all code execution, debugging, and testing. When communicating:
+Nick Macek is a product manager and AI consultant (Armatura) — not a coder. Claude Code handles all code execution, debugging, and testing. When communicating:
 - Lead with what to do and why
 - Explain architectural decisions in plain language
 - State assumptions and proceed rather than asking clarifying questions
