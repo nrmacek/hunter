@@ -84,7 +84,38 @@ Replace the 5 seed firms with real firm names from the Master Target List Excel 
 Replace stub scorer with real data collection and AI evaluation. Done when each firm has scores derived from actual public data sources, with confidence flags on any criterion where data could not be found.
 
 ### Phase 8 — Full UX
-Add all confirmed UX features: firm detail drawer, single firm add form, bulk CSV/Excel upload, BD stage selector, notes field, last contacted date, CSV export. Done when all features are working in the dashboard.
+Phase 8 is complete when all of the following are built and working:
+
+#### 1. Firm Detail Drawer
+Clicking any row in the ranked table opens a right-side panel containing:
+- Firm name, location, headcount, revenue
+- Composite score badge + rank (e.g. "Rank #1 of 120 prospects")
+- BD stage selector (dropdown: Meet / Met / Get Pilot / Develop / Expand / Maintain)
+- AI summary paragraph — one paragraph, BD-oriented, explains why this firm fits Trelity
+- Per-criterion score breakdown:
+  - Score badge (1–5, color coded)
+  - Criterion name and weight
+  - Rationale text (1–2 sentences from AI)
+  - Confidence indicator if low confidence
+- Timestamped notes field — free text, each entry logged with date/time
+- Last contacted date picker
+- Close button returns to full table view
+
+#### 2. Single Firm Add Form
+A form in the dashboard to add one firm at a time:
+- Input: firm name + source tag
+- On submit: queues firm for scraping and AI scoring
+- Firm appears in ranked table when scoring completes
+
+#### 3. Bulk CSV/Excel Upload
+Upload a spreadsheet of firm names for batch ingestion:
+- Accepts .csv or .xlsx
+- Maps firm name and source tag columns
+- Triggers batch scoring on all uploaded firms
+
+#### 4. CSV Export
+One button exports the full ranked list as a CSV with these columns:
+Firm Name | Tier | Source | BD Stage | Last Contacted | Notes | Growth Score | Industry Score | Revenue Score | Culture Score | Employees Score | Geography Score | Composite Score | Confidence flags per criterion
 
 ### Phase 9 — Vercel Deploy
 Push to Vercel. Done when Jason and John can access the dashboard via URL without Nick's machine running.
