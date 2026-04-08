@@ -81,34 +81,62 @@ Note: CLAUDE.md belongs in the repo root only. Delete any copies inside backend/
 ---
 
 ## Phase 8 — Full UX
+
 Phase 8 is complete when all of the following are built and working:
 
-### 1. Firm Detail Drawer
-Clicking any row in the ranked table opens a right-side panel containing:
+### 1. Firm Detail Drawer ✅ (partially complete)
+Clicking any row in the ranked table opens a right-side panel. The following are confirmed built:
 - Firm name, location, headcount, revenue
-- Composite score badge + rank (e.g. "Rank #1 of 120 prospects")
-- BD stage selector (dropdown: Meet / Met / Get Pilot / Develop / Expand / Maintain)
-- AI summary paragraph — one paragraph, BD-oriented, explains why this firm fits Trelity
-- Per-criterion score breakdown:
-  - Score badge (1–5, color coded)
-  - Criterion name and weight
-  - AI rationale text (1–2 sentences explaining why that score was given)
-  - Confidence indicator if low confidence (orange dot)
-- Timestamped notes field — free text, each entry logged with date/time
-- Last contacted date picker
-- Close button returns to full table view
+- Composite score badge + rank
+- BD stage selector (saves immediately)
+- Last contacted date picker (saves immediately)
+- AI summary (see format spec below)
+- Per-criterion score breakdown with badge, name, weight, rationale, confidence dot
+- Timestamped notes field
+- Close button
 
-### 2. Single Firm Add Form
+The following still need to be added to the drawer:
+
+**Expandable criterion rationale:**
+Each criterion row in the drawer is clickable. Clicking it expands to show:
+- The AI's rationale text for that score
+- Specific data points found (e.g. "629 employees — source: LinkedIn")
+- Source name or URL where data was found
+- Confidence level
+
+**Manual score override:**
+A pencil icon sits next to each criterion score badge. Clicking it allows the user to:
+- Change the score from 1–5
+- Add a short note explaining why (e.g. "Miami office is small delivery team, not a true geographic expansion")
+- Save — composite recalculates instantly
+- Original AI score remains visible alongside the override for reference
+- Override is stored in the database with timestamp and note
+
+### 2. AI Summary Format (updated)
+The AI summary in the drawer must follow this format — three short paragraphs, not one long block:
+
+**Paragraph 1 — Firm overview and fit signal** (2–3 sentences)
+Who the firm is and the headline assessment of their fit for Trelity.
+
+**Paragraph 2 — Strengths** (2–3 sentences)
+What scored well and why it matters specifically for Trelity's outsourcing model.
+
+**Paragraph 3 — Concerns and recommended next step** (2–3 sentences)
+What scored lower or is uncertain, any flags worth noting, and a concrete BD action recommendation.
+
+Total length: roughly half the length of a single dense paragraph. Punchy and scannable. No run-on lists. No exhaustive criterion-by-criterion walkthrough — that's what the score breakdown is for.
+
+### 3. Single Firm Add Form
 - Input: firm name + source tag
 - On submit: queues firm for scraping and AI scoring
 - Firm appears in ranked table when scoring completes
 
-### 3. Bulk CSV/Excel Upload
+### 4. Bulk CSV/Excel Upload
 - Accepts .csv or .xlsx
 - Maps firm name and source tag columns
 - Triggers batch scoring on all uploaded firms
 
-### 4. CSV Export
+### 5. CSV Export
 One button exports the full ranked list as CSV:
 Firm Name | Tier | Source | BD Stage | Last Contacted | Notes | Growth Score | Industry Score | Revenue Score | Culture Score | Employees Score | Geography Score | Composite Score | Confidence flags per criterion
 
@@ -152,7 +180,7 @@ Max score = 5.0
 - **3:** Modest but consistent growth of 1–5% Y/Y, stable hiring, no major expansion signals
 - **4:** Consistent growth of 5–10% Y/Y, forward-thinking, some expansion activity but not aggressive
 - **5:** Focused on fast growth. Forward thinking. Proven record of >10% growth Y/Y.
-- **Sources:** ENR 500 list, news articles, job posting websites, LinkedIn, firm's /news or /press page
+- **Sources:** ENR 500 list, news articles, job posting websites, LinkedIn, firm's /news or /press page, DDG News search
 
 ### 3. Type of Industry Served (combined with Services = 25% total)
 - **1:** Firm serves within only one of Trelity's target industries
@@ -193,8 +221,12 @@ Max score = 5.0
 - **3:** All offices located on East Coast or in Central time zone
 - **4:** Majority of offices on East Coast with one or two Central time zone offices
 - **5:** All offices located on East Coast only
-- **Note:** Offshore delivery offices (e.g. Mexico production office) do not count against Geography score — only US office locations are evaluated
-- **Sources:** Client's website office locations page — always fetch the /offices or /locations page specifically, do not rely on homepage alone
+- **East Coast states (Eastern time zone):** FL, GA, SC, NC, VA, MD, DE, NJ, NY, CT, RI, MA, VT, NH, ME — all count as East Coast
+- **Central time zone states** are acceptable and score 3–4 depending on mix
+- **Mountain and Pacific time zone offices** reduce the Geography score
+- **Offshore/international offices** are ignored entirely — do not count for or against Geography
+- **Sources:** Client's website /offices or /locations page — always fetch this page specifically, do not rely on homepage alone
+- **Consistency rule:** The Geography score and the AI summary narrative must use the same definition. If Geography scores 4 or 5, the summary must not flag geography as a concern.
 
 ---
 
@@ -219,29 +251,35 @@ When a data point cannot be found during scraping or AI evaluation:
 | Firm /services page | Direct HTTP fetch | Services provided scoring |
 | Firm /offices or /locations page | Direct HTTP fetch | Geography scoring — always fetch this specifically |
 | Firm /news or /press page | Direct HTTP fetch | Growth signals, expansion announcements |
-| DDG Search | Query + "architecture firm" | ENR/BDC mentions, general firm info — always append "architecture firm" to avoid name collisions |
+| DDG Search | Query + "architecture firm" | ENR/BDC mentions, general firm info |
 | DDG News Search | "Firm Name architecture growth OR expansion OR acquisition OR revenue" | Growth orientation signals |
 | LinkedIn job postings via DDG | "site:linkedin.com/jobs Firm Name" | Active hiring as growth proxy |
 | Glassdoor via DDG | DDG search | Employee sentiment, headcount estimate |
 
 ### Scraper Rules
-- Always append "architecture firm" or "AE firm" to DDG search queries to avoid name collisions with non-architecture companies
-- Always fetch /offices or /locations page specifically for Geography — do not rely on homepage only
+- Always append "architecture firm" or "AE firm" to DDG search queries to avoid name collisions
+- Always fetch /offices or /locations page specifically for Geography
 - Always fetch /news or /press page for Growth signals
 - If DDG rate-limits, add delay and retry — do not default to stub scores
 - Offshore/international offices do not count for Geography scoring
+- Scraped data is cached per firm — re-scoring uses cached data unless refresh=true is passed
+
+### Score Caching and Targeted Re-scoring
+- POST /score {"name": "Firm"} — full score, uses cached scrape if available
+- POST /score {"name": "Firm", "criterion": "geography"} — re-score only geography, all other scores stay locked
+- POST /score {"name": "Firm", "refresh": true} — force fresh scrape + full re-score
 
 ### Scoring Engine Output Format
 ```json
 {
-  "cultural_alignment": { "score": 4, "confidence": "high", "rationale": "..." },
-  "growth_orientation": { "score": 5, "confidence": "high", "rationale": "..." },
-  "industry_services": { "score": 3, "confidence": "low", "rationale": "..." },
-  "revenue": { "score": 5, "confidence": "high", "rationale": "..." },
-  "employees": { "score": 4, "confidence": "high", "rationale": "..." },
-  "geography": { "score": 3, "confidence": "high", "rationale": "..." },
+  "cultural_alignment": { "score": 4, "confidence": "high", "rationale": "...", "sources": ["..."] },
+  "growth_orientation": { "score": 5, "confidence": "high", "rationale": "...", "sources": ["..."] },
+  "industry_services": { "score": 3, "confidence": "low", "rationale": "...", "sources": ["..."] },
+  "revenue": { "score": 5, "confidence": "high", "rationale": "...", "sources": ["..."] },
+  "employees": { "score": 4, "confidence": "high", "rationale": "...", "sources": ["..."] },
+  "geography": { "score": 3, "confidence": "high", "rationale": "...", "sources": ["..."] },
   "composite": 4.15,
-  "ai_summary": "One paragraph BD-oriented summary of the firm's fit for Trelity."
+  "ai_summary": "Three short paragraphs per the summary format spec."
 }
 ```
 
@@ -273,19 +311,49 @@ When a data point cannot be found during scraping or AI evaluation:
 | firm_id | INTEGER | Foreign key → firms |
 | cultural_alignment | REAL | 1–5 |
 | cultural_confidence | TEXT | high / low |
+| cultural_rationale | TEXT | AI explanation |
+| cultural_sources | TEXT | Sources cited |
+| cultural_override | REAL | Manual override value if set |
+| cultural_override_note | TEXT | Note explaining override |
+| cultural_override_at | TIMESTAMP | When override was set |
 | growth_orientation | REAL | 1–5 |
 | growth_confidence | TEXT | high / low |
+| growth_rationale | TEXT | AI explanation |
+| growth_sources | TEXT | Sources cited |
+| growth_override | REAL | |
+| growth_override_note | TEXT | |
+| growth_override_at | TIMESTAMP | |
 | industry_services | REAL | 1–5 |
 | industry_confidence | TEXT | high / low |
+| industry_rationale | TEXT | AI explanation |
+| industry_sources | TEXT | Sources cited |
+| industry_override | REAL | |
+| industry_override_note | TEXT | |
+| industry_override_at | TIMESTAMP | |
 | revenue | REAL | 1–5 |
 | revenue_confidence | TEXT | high / low |
+| revenue_rationale | TEXT | AI explanation |
+| revenue_sources | TEXT | Sources cited |
+| revenue_override | REAL | |
+| revenue_override_note | TEXT | |
+| revenue_override_at | TIMESTAMP | |
 | employees | REAL | 1–5 |
 | employees_confidence | TEXT | high / low |
+| employees_rationale | TEXT | AI explanation |
+| employees_sources | TEXT | Sources cited |
+| employees_override | REAL | |
+| employees_override_note | TEXT | |
+| employees_override_at | TIMESTAMP | |
 | geography | REAL | 1–5 |
 | geography_confidence | TEXT | high / low |
+| geography_rationale | TEXT | AI explanation |
+| geography_sources | TEXT | Sources cited |
+| geography_override | REAL | |
+| geography_override_note | TEXT | |
+| geography_override_at | TIMESTAMP | |
 | composite | REAL | Weighted composite 0–5 |
 | scored_at | TIMESTAMP | |
-| score_notes | TEXT | AI rationale summary |
+| score_notes | TEXT | AI summary (3 paragraphs) |
 | is_real_score | BOOLEAN | True = AI scored, False = stub |
 
 ---
@@ -300,6 +368,7 @@ When a data point cannot be found during scraping or AI evaluation:
 | POST | `/firms` | Add a new firm (single entry) |
 | POST | `/firms/bulk` | Bulk import firms from CSV/Excel upload |
 | PATCH | `/firms/{id}` | Update BD stage, notes, last contacted |
+| PATCH | `/firms/{id}/scores/{criterion}` | Manual override for a single criterion |
 | GET | `/export` | Return full dataset as CSV download |
 
 ---
@@ -370,17 +439,19 @@ Confidence: orange dot (#E8820C) = low confidence; no dot = high confidence
 | Tool name | Trelity Prospect Scout (not Hunter) |
 | Revenue data | Ignore spreadsheet revenue figures — let Claude estimate from scraped data and training knowledge |
 | Offshore offices | Do not penalize Geography score for offshore delivery offices |
-| Confidence display | Orange dot in table for low confidence; rationale text in drawer explains reasoning — no additional label needed |
+| Confidence display | Orange dot in table for low confidence; rationale in drawer explains reasoning |
+| AI summary format | Three short paragraphs (overview, strengths, concerns/next step) — not one long block |
+| Score consistency | Scores and AI summary must use same definitions — no contradictions between score and narrative |
 
 ---
 
 ## Future Features Backlog (Post-POC)
 
 1. **Weight adjustment** — Let users tune criterion weights and have all firms re-rank instantly
-2. **Manual score override** — User overrides any criterion score with their own 1–5, adds a note, composite recalculates. Original AI score stays visible.
-3. **Shareable drawer links** — Unique URL per firm (e.g. scout.trelity.com/firms/hfa) that can be emailed to team members
-4. **Feedback loop / model learning** — Overrides, weight changes, and BD pipeline outcomes feed back into scoring prompt refinement over time
-5. **Timestamped notes** — Already in Phase 8 scope, confirmed priority
+2. **Shareable drawer links** — Unique URL per firm that can be emailed to team members
+3. **Feedback loop / model learning** — Overrides, weight changes, and BD pipeline outcomes feed back into scoring prompt refinement over time
+4. **Column filtering** — Filter ranked table by BD Stage, Source, score thresholds per criterion
+5. **Column sorting** — Click any column header to re-sort the table by that criterion
 
 ---
 
