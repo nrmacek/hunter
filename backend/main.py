@@ -74,7 +74,7 @@ SCORE_COLUMNS = """
     s.employees_override, s.employees_override_note, s.employees_override_at,
     s.geography, s.geography_confidence, s.geography_rationale, s.geography_sources,
     s.geography_override, s.geography_override_note, s.geography_override_at,
-    s.composite, s.scored_at, s.score_notes, s.is_real_score
+    s.composite, s.scored_at, s.score_notes, s.recommendation, s.is_real_score
 """
 
 
@@ -128,6 +128,7 @@ def _row_to_score_detail(row) -> ScoreDetail | None:
         composite=row["composite"],
         scored_at=row["scored_at"],
         score_notes=row["score_notes"],
+        recommendation=row["recommendation"] if "recommendation" in row.keys() else None,
         is_real_score=row["is_real_score"] or 0,
     )
 
@@ -195,8 +196,8 @@ def score_endpoint(req: ScoreRequest):
             revenue, revenue_confidence, revenue_rationale, revenue_sources,
             employees, employees_confidence, employees_rationale, employees_sources,
             geography, geography_confidence, geography_rationale, geography_sources,
-            composite, score_notes, is_real_score
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            composite, score_notes, recommendation, is_real_score
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             firm_id,
             scores["cultural_alignment"], scores["cultural_confidence"],
@@ -211,7 +212,7 @@ def score_endpoint(req: ScoreRequest):
             scores.get("employees_rationale"), scores.get("employees_sources"),
             scores["geography"], scores["geography_confidence"],
             scores.get("geography_rationale"), scores.get("geography_sources"),
-            scores["composite"], scores["score_notes"], is_real,
+            scores["composite"], scores["score_notes"], scores.get("recommendation"), is_real,
         ),
     )
 

@@ -104,6 +104,7 @@ class ScoreDetail(BaseModel):
     composite: float
     scored_at: Optional[str] = None
     score_notes: Optional[str] = None
+    recommendation: Optional[str] = None
     is_real_score: int = 0
 
 

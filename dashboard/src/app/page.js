@@ -152,7 +152,7 @@ function CriterionRow({ c, s, firmId, onUpdate }) {
         >
           &#9998;
         </button>
-        <span className={`expand-chevron${expanded ? " expand-chevron--open" : ""}`}>&#9662;</span>
+        <span className={`expand-chevron${expanded ? " expand-chevron--open" : ""}`}>&#9656;</span>
       </div>
 
       {expanded && (
@@ -197,6 +197,10 @@ function FirmDrawer({ firm, rank, totalFirms, onClose, onUpdate }) {
   const [lastContacted, setLastContacted] = useState(firm.last_contacted || "");
   const [noteText, setNoteText] = useState("");
   const [saving, setSaving] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(true);
+  const [recoOpen, setRecoOpen] = useState(true);
+  const [breakdownOpen, setBreakdownOpen] = useState(true);
+  const [notesOpen, setNotesOpen] = useState(true);
 
   useEffect(() => {
     setBdStage(firm.bd_stage || "Meet");
@@ -302,60 +306,86 @@ function FirmDrawer({ firm, rank, totalFirms, onClose, onUpdate }) {
 
           {/* AI Summary — rendered as multiple paragraphs */}
           {summaryParagraphs.length > 0 && (
-            <div className="drawer-section">
-              <h3 className="drawer-section-title">AI Summary</h3>
-              {summaryParagraphs.map((p, i) => (
+            <div className={`drawer-section${!summaryOpen ? " drawer-section--collapsed" : ""}`}>
+              <h3 className={`drawer-section-title drawer-section-title--toggle${!summaryOpen ? " drawer-section-title--collapsed" : ""}`} onClick={() => setSummaryOpen(!summaryOpen)}>
+                AI Summary
+                <span className={`expand-chevron${summaryOpen ? " expand-chevron--open" : ""}`}>&#9656;</span>
+              </h3>
+              {summaryOpen && summaryParagraphs.map((p, i) => (
                 <p key={i} className="drawer-summary">{p}</p>
               ))}
             </div>
           )}
 
+          {/* Recommendation */}
+          {s?.recommendation && (
+            <div className={`drawer-section${!recoOpen ? " drawer-section--collapsed" : ""}`}>
+              <h3 className={`drawer-section-title drawer-section-title--toggle${!recoOpen ? " drawer-section-title--collapsed" : ""}`} onClick={() => setRecoOpen(!recoOpen)}>
+                Recommendation
+                <span className={`expand-chevron${recoOpen ? " expand-chevron--open" : ""}`}>&#9656;</span>
+              </h3>
+              {recoOpen && <p className="drawer-summary">{s.recommendation}</p>}
+            </div>
+          )}
+
           {/* Score Breakdown — expandable rows with override */}
           {s && (
-            <div className="drawer-section">
-              <h3 className="drawer-section-title">Score Breakdown</h3>
-              <div className="drawer-criteria">
-                {CRITERIA.map((c) => (
-                  <CriterionRow
-                    key={c.key}
-                    c={c}
-                    s={s}
-                    firmId={firm.id}
-                    onUpdate={onUpdate}
-                  />
-                ))}
-              </div>
+            <div className={`drawer-section${!breakdownOpen ? " drawer-section--collapsed" : ""}`}>
+              <h3 className={`drawer-section-title drawer-section-title--toggle${!breakdownOpen ? " drawer-section-title--collapsed" : ""}`} onClick={() => setBreakdownOpen(!breakdownOpen)}>
+                Score Breakdown
+                <span className={`expand-chevron${breakdownOpen ? " expand-chevron--open" : ""}`}>&#9656;</span>
+              </h3>
+              {breakdownOpen && (
+                <div className="drawer-criteria">
+                  {CRITERIA.map((c) => (
+                    <CriterionRow
+                      key={c.key}
+                      c={c}
+                      s={s}
+                      firmId={firm.id}
+                      onUpdate={onUpdate}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {/* Notes */}
-          <div className="drawer-section">
-            <h3 className="drawer-section-title">Notes</h3>
-            <div className="drawer-note-input">
-              <textarea
-                className="drawer-textarea"
-                placeholder="Add a note..."
-                value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
-                rows={2}
-              />
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={handleAddNote}
-                disabled={saving || !noteText.trim()}
-              >
-                Add Note
-              </button>
-            </div>
-            {notes.length > 0 && (
-              <div className="drawer-notes-list">
-                {notes.map((n, i) => (
-                  <div key={i} className="drawer-note">
-                    {n.ts && <span className="drawer-note-ts">{formatNoteTs(n.ts)}</span>}
-                    <span className="drawer-note-text">{n.text}</span>
+          <div className={`drawer-section${!notesOpen ? " drawer-section--collapsed" : ""}`}>
+            <h3 className={`drawer-section-title drawer-section-title--toggle${!notesOpen ? " drawer-section-title--collapsed" : ""}`} onClick={() => setNotesOpen(!notesOpen)}>
+              Notes
+              <span className={`expand-chevron${notesOpen ? " expand-chevron--open" : ""}`}>&#9656;</span>
+            </h3>
+            {notesOpen && (
+              <>
+                <div className="drawer-note-input">
+                  <textarea
+                    className="drawer-textarea"
+                    placeholder="Add a note..."
+                    value={noteText}
+                    onChange={(e) => setNoteText(e.target.value)}
+                    rows={2}
+                  />
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={handleAddNote}
+                    disabled={saving || !noteText.trim()}
+                  >
+                    Add Note
+                  </button>
+                </div>
+                {notes.length > 0 && (
+                  <div className="drawer-notes-list">
+                    {notes.map((n, i) => (
+                      <div key={i} className="drawer-note">
+                        {n.ts && <span className="drawer-note-ts">{formatNoteTs(n.ts)}</span>}
+                        <span className="drawer-note-text">{n.text}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
         </div>

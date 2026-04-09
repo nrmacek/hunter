@@ -607,7 +607,7 @@ body {
 
 .drawer-select,
 .drawer-input {
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 0.85rem;
   padding: 6px 10px;
   border: 1px solid var(--color-border);
@@ -615,6 +615,15 @@ body {
   background: #fff;
   color: var(--color-text);
   flex: 1;
+}
+
+.drawer-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M2 4l4 5 4-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
 }
 
 .drawer-select:focus,
@@ -641,6 +650,29 @@ body {
   margin: 0 0 0.75rem;
 }
 
+.drawer-section-title--toggle {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.drawer-section--collapsed {
+  padding-top: 8px;
+  padding-bottom: 0;
+}
+
+.drawer-section-title--collapsed {
+  margin-bottom: 0;
+}
+
+.drawer-section-title--toggle .expand-chevron {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
 .drawer-summary {
   font-size: 0.86rem;
   line-height: 1.6;
@@ -651,6 +683,7 @@ body {
 .drawer-summary:last-child {
   margin-bottom: 0;
 }
+
 
 /* Criteria breakdown */
 
@@ -693,13 +726,13 @@ body {
 }
 
 .expand-chevron {
-  font-size: 0.7rem;
+  font-size: 1.4rem;
   color: var(--color-text-muted);
   transition: transform 0.2s ease;
 }
 
 .expand-chevron--open {
-  transform: rotate(180deg);
+  transform: rotate(90deg);
 }
 
 .override-pencil {
@@ -750,14 +783,20 @@ body {
   margin-bottom: 4px;
 }
 
+.drawer-criterion-sources strong,
+.drawer-criterion-conf strong {
+  font-weight: 800;
+  color: var(--color-text);
+}
+
 .drawer-criterion-conf {
   font-size: 0.75rem;
   color: var(--color-text-muted);
   margin-bottom: 4px;
 }
 
-.conf-high { color: var(--score-5); }
-.conf-low  { color: #E8820C; }
+.conf-high { color: var(--color-teal); font-weight: 800; }
+.conf-low  { color: #E8820C; font-weight: 800; }
 
 .drawer-criterion-override-info {
   font-size: 0.75rem;

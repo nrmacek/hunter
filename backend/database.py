@@ -81,6 +81,12 @@ def init_db() -> None:
 
     conn.commit()
 
+    # Migrate: add recommendation column to scores
+    try:
+        cursor.execute("ALTER TABLE scores ADD COLUMN recommendation TEXT")
+    except Exception:
+        pass
+
     # Migrate: add website column to firms
     try:
         cursor.execute("ALTER TABLE firms ADD COLUMN website TEXT")

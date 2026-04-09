@@ -137,7 +137,8 @@ Return this exact JSON structure:
   "geography_confidence": "<high|low>",
   "geography_rationale": "<1–2 sentences explaining the geography score>",
   "geography_sources": "<sources used>",
-  "ai_summary": "<three short paragraphs per the format above, separated by \\n\\n>"
+  "ai_summary": "<three short paragraphs per the format above, separated by \\n\\n>",
+  "recommendation": "<2–3 sentences advising Trelity's BD team on the most logical next action for this prospect. Consider: any low-confidence scores that need research, the firm's BD stage, strongest alignment areas to lead with, and the best channel for first contact. Be specific and actionable.>"
 }"""
 
 
@@ -268,6 +269,7 @@ def ai_rescore_criterion(
     result[f"{criterion}_confidence"] = parsed.get(f"{criterion}_confidence", "low")
     result[f"{criterion}_rationale"] = parsed.get(f"{criterion}_rationale", "")
     result["score_notes"] = parsed.get("ai_summary", existing_scores.get("score_notes", ""))
+    result["recommendation"] = parsed.get("recommendation", existing_scores.get("recommendation", ""))
 
     # Recompute composite with the updated criterion
     criteria = {k: result[k] for k in WEIGHTS}
@@ -341,4 +343,5 @@ def ai_score_firm(firm_name: str, scraped: dict, known_data: dict | None = None)
         "geography_sources":    parsed.get("geography_sources", ""),
         "composite":            composite,
         "score_notes":          ai_summary,
+        "recommendation":       parsed.get("recommendation", ""),
     }
