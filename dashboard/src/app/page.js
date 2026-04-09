@@ -25,11 +25,8 @@ function getScoreTier(score) {
   return 1;
 }
 
-function getRankClass(rank) {
-  if (rank === 1) return "rank-1";
-  if (rank === 2) return "rank-2";
-  if (rank === 3) return "rank-3";
-  return "rank-default";
+function getRankClass(composite) {
+  return `rank-score-${getScoreTier(composite)}`;
 }
 
 function getBdStageClass(stage) {
@@ -673,7 +670,7 @@ export default function HomePage() {
                     onClick={() => setSelectedFirmId(firm.id)}
                   >
                     <td className="col-center">
-                      <span className={`rank-badge ${getRankClass(idx + 1)}`}>{idx + 1}</span>
+                      <span className={`rank-badge ${getRankClass(firm.score?.composite || 0)}`}>{idx + 1}</span>
                     </td>
                     <td className="col-center">
                       {firm.score && <ScoreBadge value={firm.score.composite} confidence="high" isComposite />}
