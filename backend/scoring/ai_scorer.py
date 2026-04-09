@@ -79,40 +79,65 @@ SCORING RUBRIC:
    If headcount unknown, score 2 and mark confidence low
 
 6. geography (weight 10%)
+   "East Coast" means all Eastern time zone states: ME, NH, VT, MA, RI, CT, NY, NJ, PA, DE, MD, DC, VA, WV, NC, SC, GA, FL.
+   "Central" means all Central time zone states: OH, MI, IN, IL, WI, MN, IA, MO, ND, SD, NE, KS, TX, OK, AR, LA, MS, AL, TN, KY.
+   Central time zone offices are acceptable and do NOT reduce the score.
+   Only Mountain time zone (MT, WY, CO, NM, AZ, UT, ID) or Pacific time zone (WA, OR, CA, NV, HI, AK) offices reduce the score.
+   International/offshore offices (e.g. Mexico, India) are IGNORED entirely — do not count them for or against the score.
+
    HQ location is the primary factor. Score using two steps:
 
    Step 1 — HQ sets the base:
-     East Coast HQ (ME, NH, VT, MA, RI, CT, NY, NJ, PA, DE, MD, VA, NC, SC, GA, FL, DC) → base 4
-     Central time zone HQ (OH, MI, IN, IL, WI, MN, IA, MO, ND, SD, NE, KS, TX, OK, AR, LA, MS, AL, TN, KY, WV) → base 3
-     Mountain / West Coast / International HQ → base 1
+     East Coast HQ → base 4
+     Central time zone HQ → base 3
+     Mountain / West Coast HQ → base 1
 
-   Step 2 — Satellite offices adjust:
-     All offices East Coast only → +1
+   Step 2 — US satellite offices adjust (ignore any international/offshore offices):
+     All US offices East Coast only → +1
      East Coast + Central mix → 0
-     Any Mountain or West Coast office → −1
-     Any international offices → −1
+     Any Mountain or Pacific time zone US office → −1
 
    Final = HQ base + modifier, clamped to 1–5.
-   Examples: NJ HQ all East Coast = 5 | NJ HQ + Central offices = 4 | NJ HQ + one West Coast = 3 | TX HQ all Central = 3 | Seattle HQ = 1
+   Examples: NJ HQ all East Coast = 5 | FL HQ all East Coast = 5 | NJ HQ + Central offices = 4 | NJ HQ + one West Coast = 3 | TX HQ all Central = 3 | Seattle HQ = 1
    If office locations unknown, score 2 and mark confidence low
 
 MISSING DATA RULE: If you cannot find data for a criterion, score it 2 and set confidence to "low".
+
+CONSISTENCY RULE: The ai_summary MUST be consistent with the numeric scores you assign. Do not flag something as a concern or weakness in the summary if it scored 4 or 5. Do not praise something in the summary if it scored 1 or 2. The summary should reflect and explain the scores, not contradict them.
+
+AI SUMMARY FORMAT: Write exactly three short paragraphs separated by \\n\\n:
+  Paragraph 1 — Firm overview and fit signal (2–3 sentences): Who the firm is and headline fit assessment.
+  Paragraph 2 — Strengths (2–3 sentences): What scored well and why it matters for Trelity's outsourcing model.
+  Paragraph 3 — Concerns and next step (2–3 sentences): What scored lower, flags worth noting, and a concrete BD action.
+Total length: roughly 6–9 sentences. Punchy and scannable. No exhaustive criterion walkthrough.
 
 Return this exact JSON structure:
 {
   "cultural_alignment": <float 1.0–5.0>,
   "cultural_confidence": "<high|low>",
+  "cultural_rationale": "<1–2 sentences explaining the cultural alignment score>",
+  "cultural_sources": "<comma-separated list of sources used, e.g. 'Firm website About page, Glassdoor reviews'>",
   "growth_orientation": <float 1.0–5.0>,
   "growth_confidence": "<high|low>",
+  "growth_rationale": "<1–2 sentences explaining the growth orientation score>",
+  "growth_sources": "<sources used>",
   "industry_services": <float 1.0–5.0>,
   "industry_confidence": "<high|low>",
+  "industry_rationale": "<1–2 sentences explaining the industry/services score>",
+  "industry_sources": "<sources used>",
   "revenue": <float 1.0–5.0>,
   "revenue_confidence": "<high|low>",
+  "revenue_rationale": "<1–2 sentences explaining the revenue score>",
+  "revenue_sources": "<sources used>",
   "employees": <float 1.0–5.0>,
   "employees_confidence": "<high|low>",
+  "employees_rationale": "<1–2 sentences explaining the employees score>",
+  "employees_sources": "<sources used>",
   "geography": <float 1.0–5.0>,
   "geography_confidence": "<high|low>",
-  "ai_summary": "<one paragraph, BD-oriented, explains why this firm fits or doesn't fit Trelity>"
+  "geography_rationale": "<1–2 sentences explaining the geography score>",
+  "geography_sources": "<sources used>",
+  "ai_summary": "<three short paragraphs per the format above, separated by \\n\\n>"
 }"""
 
 
@@ -161,6 +186,96 @@ def _parse_response(text: str) -> dict:
     return json.loads(text[start:end])
 
 
+CRITERION_LABELS = {
+    "cultural_alignment": "Cultural Alignment",
+    "growth_orientation": "Growth Orientation",
+    "industry_services": "Industry & Services",
+    "revenue": "Revenue",
+    "employees": "Employees",
+    "geography": "Geography",
+}
+
+
+def ai_rescore_criterion(
+    firm_name: str,
+    scraped: dict,
+    existing_scores: dict,
+    criterion: str,
+    known_data: dict | None = None,
+) -> dict:
+    """
+    Re-score a single criterion while keeping all others locked.
+    Returns a complete score dict with the targeted criterion updated
+    and a regenerated ai_summary consistent with all scores.
+    """
+    client = _get_client()
+
+    # Build locked scores display for the prompt
+    locked_lines = []
+    for key in WEIGHTS:
+        if key == criterion:
+            continue
+        conf_key = f"{key}_confidence"
+        rat_key = f"{key}_rationale"
+        locked_lines.append(
+            f"  {key}: {existing_scores[key]} "
+            f"(confidence: {existing_scores.get(conf_key, 'high')}, "
+            f"rationale: \"{existing_scores.get(rat_key, '')}\")"
+        )
+    locked_block = "\n".join(locked_lines)
+
+    label = CRITERION_LABELS.get(criterion, criterion)
+
+    user_msg = _build_user_message(firm_name, scraped, known_data)
+    user_msg += (
+        f"\n\n--- TARGETED RE-SCORE ---\n"
+        f"You are re-scoring ONLY the \"{criterion}\" criterion for this firm.\n"
+        f"The following scores are LOCKED and must NOT be changed:\n"
+        f"{locked_block}\n\n"
+        f"Re-score ONLY \"{criterion}\" using the rubric above.\n"
+        f"Also regenerate the ai_summary paragraph to be consistent with ALL scores "
+        f"(the locked ones above plus your new {criterion} score).\n\n"
+        f"Return this JSON:\n"
+        f"{{\n"
+        f"  \"{criterion}\": <float 1.0–5.0>,\n"
+        f"  \"{criterion}_confidence\": \"<high|low>\",\n"
+        f"  \"{criterion}_rationale\": \"<1–2 sentences>\",\n"
+        f"  \"ai_summary\": \"<one paragraph, BD-oriented>\"\n"
+        f"}}"
+    )
+
+    logger.info(f"Calling Claude API for targeted re-score ({criterion}): {firm_name}")
+    message = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=2048,
+        system=SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": user_msg}],
+    )
+
+    raw = message.content[0].text
+    logger.debug(f"Claude targeted re-score response for {firm_name}:\n{raw}")
+
+    parsed = _parse_response(raw)
+
+    # Validate the targeted criterion is present
+    if criterion not in parsed:
+        raise ValueError(f"Missing targeted criterion '{criterion}' in Claude response")
+    parsed[criterion] = max(1.0, min(5.0, float(parsed[criterion])))
+
+    # Build result: start from existing, overlay targeted criterion
+    result = dict(existing_scores)
+    result[criterion] = parsed[criterion]
+    result[f"{criterion}_confidence"] = parsed.get(f"{criterion}_confidence", "low")
+    result[f"{criterion}_rationale"] = parsed.get(f"{criterion}_rationale", "")
+    result["score_notes"] = parsed.get("ai_summary", existing_scores.get("score_notes", ""))
+
+    # Recompute composite with the updated criterion
+    criteria = {k: result[k] for k in WEIGHTS}
+    result["composite"] = compute_composite(criteria)
+
+    return result
+
+
 def ai_score_firm(firm_name: str, scraped: dict, known_data: dict | None = None) -> dict:
     """
     Call Claude API with scraped data. Returns a score dict matching the DB schema.
@@ -172,7 +287,7 @@ def ai_score_firm(firm_name: str, scraped: dict, known_data: dict | None = None)
     logger.info(f"Calling Claude API for: {firm_name}")
     message = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=1024,
+        max_tokens=2048,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_msg}],
     )
@@ -202,16 +317,28 @@ def ai_score_firm(firm_name: str, scraped: dict, known_data: dict | None = None)
     return {
         "cultural_alignment":   parsed["cultural_alignment"],
         "cultural_confidence":  parsed["cultural_confidence"],
+        "cultural_rationale":   parsed.get("cultural_rationale", ""),
+        "cultural_sources":     parsed.get("cultural_sources", ""),
         "growth_orientation":   parsed["growth_orientation"],
         "growth_confidence":    parsed["growth_confidence"],
+        "growth_rationale":     parsed.get("growth_rationale", ""),
+        "growth_sources":       parsed.get("growth_sources", ""),
         "industry_services":    parsed["industry_services"],
         "industry_confidence":  parsed["industry_confidence"],
+        "industry_rationale":   parsed.get("industry_rationale", ""),
+        "industry_sources":     parsed.get("industry_sources", ""),
         "revenue":              parsed["revenue"],
         "revenue_confidence":   parsed["revenue_confidence"],
+        "revenue_rationale":    parsed.get("revenue_rationale", ""),
+        "revenue_sources":      parsed.get("revenue_sources", ""),
         "employees":            parsed["employees"],
         "employees_confidence": parsed["employees_confidence"],
+        "employees_rationale":  parsed.get("employees_rationale", ""),
+        "employees_sources":    parsed.get("employees_sources", ""),
         "geography":            parsed["geography"],
         "geography_confidence": parsed["geography_confidence"],
+        "geography_rationale":  parsed.get("geography_rationale", ""),
+        "geography_sources":    parsed.get("geography_sources", ""),
         "composite":            composite,
         "score_notes":          ai_summary,
     }

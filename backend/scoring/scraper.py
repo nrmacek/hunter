@@ -176,6 +176,52 @@ def _fetch_firm_pages(base_url: str) -> str:
     return "\n\n---\n\n".join(combined)
 
 
+def _fetch_news_pages(base_url: str) -> str:
+    """
+    Fetch /news, /press, /newsroom, or /press-releases from the firm website.
+    Returns extracted text capped to 2500 chars, or empty string if none found.
+    """
+    base = base_url.rstrip("/")
+    news_slugs = ["/news", "/press", "/newsroom", "/press-releases",
+                  "/news-events", "/media", "/insights"]
+
+    for slug in news_slugs:
+        time.sleep(random.uniform(0.4, 0.8))
+        html = _get(base + slug)
+        if not html:
+            continue
+        soup = BeautifulSoup(html, "html.parser")
+        for tag in soup(["nav", "footer", "script", "style", "header"]):
+            tag.decompose()
+        text = soup.get_text(separator=" ", strip=True)
+        if len(text) > 200:
+            logger.debug(f"  News page found: {base + slug}")
+            return text[:2500]
+
+    return ""
+
+
+def _ddg_news_search(query: str) -> str:
+    """
+    DDG search targeting press release and news sources for growth signals.
+    Uses site-scoped query to hit BusinessWire, PRNewswire, and ENR.
+    """
+    news_query = (
+        f"{query} "
+        "(site:businesswire.com OR site:prnewswire.com OR site:enr.com "
+        "OR site:architectmagazine.com OR site:bdcnetwork.com)"
+    )
+    return _ddg_search(news_query)
+
+
+def _ddg_linkedin_jobs(firm_name: str) -> str:
+    """
+    Search for LinkedIn job posting signals via DDG.
+    Returns snippets indicating hiring volume and active roles.
+    """
+    return _ddg_search(f'"{firm_name}" site:linkedin.com jobs hiring')
+
+
 def _find_website_via_ddg(firm_name: str) -> str | None:
     """Try to find the firm's official website URL via DDG search."""
     query = f'"{firm_name}" official website architecture engineering'
@@ -213,56 +259,77 @@ def _find_website_via_ddg(firm_name: str) -> str | None:
     return None
 
 
-def scrape_firm(firm_name: str) -> dict:
+def scrape_firm(firm_name: str, website_url: str | None = None) -> dict:
     """
     Collect qualitative text signals for a firm. Returns a dict with keys:
         overview, growth, industry_services, geography, website_url
     Revenue and employees are NOT scraped here — they come from the DB
     and are passed as known_data to the AI scorer.
+
+    If website_url is provided (from user input), skip guessing/DDG lookup.
     """
     logger.info(f"Scraping: {firm_name}")
 
     # ── Step 1: Find and fetch the firm's website ──────────────────────────
-    website_url = None
     website_text = ""
 
-    # Try guessed URLs first (fast, no rate limit risk)
-    for candidate in _guess_website_urls(firm_name):
-        time.sleep(0.3)
-        html = _get(candidate)
-        if html and len(html) > 500:
-            website_url = candidate
-            logger.info(f"  Website found via guess: {candidate}")
-            website_text = _fetch_firm_pages(candidate)
-            break
+    if website_url:
+        # User provided the website — use it directly
+        logger.info(f"  Using provided website: {website_url}")
+        website_text = _fetch_firm_pages(website_url)
+    else:
+        # Try guessed URLs first (fast, no rate limit risk)
+        for candidate in _guess_website_urls(firm_name):
+            time.sleep(0.3)
+            html = _get(candidate)
+            if html and len(html) > 500:
+                website_url = candidate
+                logger.info(f"  Website found via guess: {candidate}")
+                website_text = _fetch_firm_pages(candidate)
+                break
 
-    # Fall back to DDG if guessing failed
-    if not website_url:
-        time.sleep(2)
-        website_url = _find_website_via_ddg(firm_name)
-        if website_url:
-            logger.info(f"  Website found via DDG: {website_url}")
-            website_text = _fetch_firm_pages(website_url)
-        else:
-            logger.info(f"  No website found for {firm_name}")
+        # Fall back to DDG if guessing failed
+        if not website_url:
+            time.sleep(2)
+            website_url = _find_website_via_ddg(firm_name)
+            if website_url:
+                logger.info(f"  Website found via DDG: {website_url}")
+                website_text = _fetch_firm_pages(website_url)
+            else:
+                logger.info(f"  No website found for {firm_name}")
 
-    # ── Step 2: DDG searches for supplemental signals ─────────────────────
-    # Limit to 2 searches to reduce rate-limit exposure; Claude's training
-    # knowledge fills gaps for well-known firms.
+    # ── Step 2: Fetch news/press page from website ────────────────────────
+    news_text = ""
+    if website_url:
+        news_text = _fetch_news_pages(website_url)
 
+    # ── Step 3: DDG searches for supplemental signals ─────────────────────
     time.sleep(random.uniform(2.5, 4.0))
-    growth = _ddg_search(
+    growth_ddg = _ddg_search(
         f'"{firm_name}" architecture engineering growth revenue ENR ranking 2023 2024 expansion'
     )
 
     time.sleep(random.uniform(3.0, 5.0))
+    growth_news = _ddg_news_search(f'"{firm_name}"')
+
+    time.sleep(random.uniform(3.0, 5.0))
+    growth_jobs = _ddg_linkedin_jobs(firm_name)
+
+    time.sleep(random.uniform(2.5, 4.0))
     overview = _ddg_search(
         f'"{firm_name}" architecture engineering firm offices locations employees'
     )
 
+    growth_combined = "\n".join(filter(None, [
+        growth_ddg,
+        news_text,
+        growth_news,
+        growth_jobs,
+    ]))
+
     return {
         "overview":          overview,
-        "growth":            growth,
+        "growth":            growth_combined,
         "industry_services": website_text,
         "geography":         overview + "\n" + website_text,
         "website_url":       website_url or "",

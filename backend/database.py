@@ -69,6 +69,35 @@ def init_db() -> None:
         )
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS scraped_cache (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            firm_id     INTEGER NOT NULL UNIQUE,
+            scraped_json TEXT NOT NULL,
+            scraped_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (firm_id) REFERENCES firms(id) ON DELETE CASCADE
+        )
+    """)
+
+    conn.commit()
+
+    # Migrate: add website column to firms
+    try:
+        cursor.execute("ALTER TABLE firms ADD COLUMN website TEXT")
+    except Exception:
+        pass
+
+    # Migrate: add per-criterion detail columns (safe — no-ops if already present)
+    prefixes = ["cultural", "growth", "industry", "revenue", "employees", "geography"]
+    suffixes = ["_rationale TEXT", "_sources TEXT",
+                "_override REAL", "_override_note TEXT", "_override_at TIMESTAMP"]
+    for prefix in prefixes:
+        for suffix in suffixes:
+            try:
+                cursor.execute(f"ALTER TABLE scores ADD COLUMN {prefix}{suffix}")
+            except Exception:
+                pass  # Column already exists
+
     conn.commit()
     conn.close()
 
